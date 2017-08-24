@@ -157,9 +157,13 @@ then
 	echo "$date_now Backing up directories" >> $log_file
 	for backup_dirs in $backup_directories
 	do
-		echo "--> $backup_dirs" | tee -a $log_file
-		dir_name=`echo $backup_dirs | cut -d / -f2- | sed 's/\//-/g'`
-		tar -cjf $backup_path/Backup/$path_date/$dir_name.tar.bz2 $backup_dirs/ > /dev/null 2> /dev/null
+      echo "--> $backup_dirs" | tee -a $log_file
+		  dir_name=`echo $backup_dirs | cut -d / -f2- | sed 's/\//-/g'`
+      if [[ -d ${backup_dirs}/.git ]]; then
+          tar -cjf $backup_path/Backup/$path_date/$dir_name.tar.bz2 -X ${backup_dirs}/.gitignore $backup_dirs/ > /dev/null 2> /dev/null
+      else
+          tar -cjf $backup_path/Backup/$path_date/$dir_name.tar.bz2 $backup_dirs/ > /dev/null 2> /dev/null
+      fi
 	done
 	echo
 fi
