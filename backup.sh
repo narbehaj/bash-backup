@@ -11,7 +11,7 @@
 #	- Upload to MEGA.nz cloud
 #	- Send a notification to your email
 #	- Logging all the activities
-#   - Encrypts backup file using GPG
+#	- Encrypts backup file using GPG
 #
 # Edit the configuration and run:
 #	$ sudo bash backup.sh
