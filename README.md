@@ -9,6 +9,7 @@ You need megatools in order to upload your backup file to MEGA. Download megatoo
 - Upload to MEGA.nz cloud
 - Send a notification to your email
 - Logging all the activities
+- Encrypts backup file using GPG
 
 # Edit the configuration and run:
 ```

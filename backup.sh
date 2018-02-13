@@ -11,6 +11,7 @@
 #	- Upload to MEGA.nz cloud
 #	- Send a notification to your email
 #	- Logging all the activities
+#   - Encrypts backup file using GPG
 #
 # Edit the configuration and run:
 #	$ sudo bash backup.sh
@@ -65,6 +66,10 @@ ftp_password=""
 # You should have sendmail or postfix installed
 send_email="no"
 email_to="test@gmail.com"
+
+# Encrypt archive file using GPG
+gpg_enable="no"
+gpg_public_recipient=""
 
 # Upload to MEGA.nz if you have installed the client.
 # /Root/ is the main directory in MEGA.nz
@@ -224,10 +229,24 @@ echo -e "\n ${color}--- $date_now Creating TAR file located in $backup_path/Full
 echo "$date_now Creating TAR file located in $backup_path/Full_Backup_$path_date.tar.bz2" >> $log_file
 tar -cjf $backup_path/Full_Backup_${path_date}.tar.bz2 $backup_path/Backup/$path_date 2> /dev/null
 rm -rf $backup_path/Backup/
+final_archive="Full_Backup_${path_date}.tar.bz2"
 
 sleep 1
 
 ############################################################################################
+
+# Encrypt using GPG
+if [ $gpg_enable = "yes" ]
+then
+    echo -e "\n ${color}--- $date_now Encrypting archive file using $gpg_public_recipient key\n${nc}"
+    echo "$date_now Encrypting archive file using $gpg_public_recipient key" >> $log_file
+    gpg --yes --always-trust -e -r $gpg_public_recipient $backup_path/Full_Backup_${path_date}.tar.bz2
+    # Removing the unencrypted archive file
+    rm $backup_path/Full_Backup_${path_date}.tar.bz2
+    final_archive="Full_Backup_${path_date}.tar.bz2.gpg"
+fi
+
+sleep 1
 
 # Copy to other storage
 if [ $external_copy = "yes" ]
@@ -236,7 +255,7 @@ then
 	do
 		echo -e "\n ${color}--- $date_now Copy backup archive to $cp_paths: \n${nc}"
 		echo "$date_now Copy backup archive to $cp_paths" >> $log_file
-		cp $backup_path/Full_Backup_$path_date.tar.bz2 $cp_paths/
+		cp $backup_path/$final_archive $cp_paths/
 		if [ $? -eq 0 ]
 		then
 			echo -e "Copied to $cp_paths. \n"
@@ -255,7 +274,7 @@ if [ $scp_enable = "yes" ]
 then
 	echo -e "\n ${color}--- $date_now SCP backup archive to $scp_server: \n${nc}"
 	echo "$date_now SCP backup archive to $scp_server" >> $log_file
-	scp -P $scp_port $backup_path/Full_Backup_$path_date.tar.bz2 '$scp_username'@'$scp_server':$scp_path
+	scp -P $scp_port $backup_path/$final_archive '$scp_username'@'$scp_server':$scp_path
 	echo "$date_now SCP done" | tee -a $log_file
 fi
 
@@ -268,7 +287,7 @@ then
 	then
 		echo -e "\n ${color}--- $date_now Uploading backup archive to FTP server $ftp_server \n${nc}"
 		echo "$date_now Uploading backup archive to FTP server $ftp_server" >> $log_file
-		curl --connect-timeout 30 -S -T $backup_path/Full_Backup_$path_date.tar.bz2 ftp://$ftp_server/$ftp_path --user $ftp_username:$ftp_password | tee -a $log_file
+		curl --connect-timeout 30 -S -T $backup_path/$final_archive ftp://$ftp_server/$ftp_path --user $ftp_username:$ftp_password | tee -a $log_file
 		if [ $? -eq 0 ]
 		then
 			echo "$date_now FTP Upload Done" | tee -a $log_file
@@ -284,14 +303,14 @@ then
 	fi
 fi
 
-# Upload TAR file to MEGA.nz
+# Upload archive file to MEGA.nz
 if [ $mega_enable = "yes" ]
 then
 	if [ `which megaput` ]
 	then
 		echo -e "\n ${color}--- $date_now Uploading backup archive to MEGA.nz \n${nc}"
 		echo "$date_now Uploading backup archive to MEGA.nz" >> $log_file
-		megaput --reload --path $mega_path -u $mega_email -p $mega_pass $backup_path/Full_Backup_$path_date.tar.bz2
+		megaput --reload --path $mega_path -u $mega_email -p $mega_pass $backup_path/$final_archive
 		echo "$date_now MEGA Upload Done. Path: $mega_path" | tee -a $log_file
 	else
 		echo -e " ${color_fail}--- $date_now You have been enabled MEGA upload. ${nc}"
@@ -304,16 +323,16 @@ fi
 # Send a simple email notification
 if [ $send_email = "yes" ]
 then
-	echo -e "Backup completed $date_now\nBackup path: $backup_path/Full_Backup_$path_date.tar.bz2" | mail -s "Backup Result" $email_to >> $log_file 2>&1
+	echo -e "Backup completed $date_now\nBackup path: $backup_path/$final_archive" | mail -s "Backup Result" $email_to >> $log_file 2>&1
 fi
 
 echo -e "\n"
 echo -e "###########################################################"
 echo -e "$date_now Backup finished"
-echo -e "Backup path: $backup_path/Full_Backup_${server_name}_${hostname}_${path_date}.tar.bz2"
+echo -e "Backup path: $backup_path/$final_archive"
 echo -e "###########################################################"
 echo -e "\n"
-echo "$date_now Backup finished. Backup path: $backup_path/Full_Backup_${path_date}.tar.bz" >> $log_file
+echo "$date_now Backup finished. Backup path: $backup_path/$final_archive" >> $log_file
 echo "#######################" >> $log_file
 
 # Removing lock after successful backup
