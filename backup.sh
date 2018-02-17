@@ -1,4 +1,6 @@
 #!/bin/bash
+#
+# bash-backup V1.0
 #################################################################
 # You need megatools in order to upload your backup file to MEGA
 # Download megatools from http://megatools.megous.com/
@@ -6,7 +8,7 @@
 # Simple backup script for GNU/Linux servers
 # Main features:
 #	- Backup custom files and directories
-#	- Backup MySQL/PostgreSQL databases
+#	- Backup MySQL/PostgreSQL/MongoDB databases
 #	- Copy/SCP/FTP to another server or mounted media
 #	- Upload to MEGA.nz cloud
 #	- Send a notification to your email
@@ -90,6 +92,13 @@ postgres_pass=""
 postgres_database=""
 postgres_host="localhost"
 postgres_port="5432"
+
+# MongoDB collection dump (MongoDB Version +3)
+mongo_backup="no"
+mongo_host="localhost"
+mongo_port="27017"
+mongo_database=""
+mongo_collection=""
 
 #################################################################
 #################################################################
@@ -212,12 +221,28 @@ then
 	echo -e "\n ${color}--- $date_now PostgreSQL backup enabled, backing up: \n${nc}"
 	echo "$date_now PostgreSQL backup enabled, backing up" >> $log_file
 	# Using ionice for PostgreSQL dump
-	ionice -c 3 pg_dump -p $postgres_port -h $postgres_host -Fc -U $postgres_user $postgres_database > $backup_path/Backup/$path_date/Postgres_Full_Dump_$path_date.dump | tee -a $log_file
+	ionice -c 3 pg_dump -p $postgres_port -h $postgres_host -Fc -U $postgres_user $postgres_database > ${backup_path}/Backup/${path_date}/Postgres_Full_Dump_${path_date}.dump | tee -a $log_file
 	if [ $? -eq 0 ]
 	then
 		echo -e "\n ${color}--- $date_now PostgreSQL backup completed. \n${nc}"
 		echo "$date_now PostgreSQL backup completed" >> $log_file
 	fi
+fi
+
+sleep 1
+
+# MongoDB backup
+if [ $mongo_backup = "yes" ]
+then
+    echo -e "\n ${color}--- $date_now MongoDB backup enabled, backing up: \n${nc}"
+    echo "$date_now MongoDB backup enabled, backing up" >> $log_file
+    # Using ionice for MongoDB dump
+    ionice -c 3 mongodump --host $mongo_host --collection $mongo_collection --db $mongo_database --gzip --archive=${backup_path}/Backup/${path_date}/MongoDB_${mongo_collection}_${path_date}.dump | tee -a $log_file
+    if [ $? -eq 0 ]
+    then
+        echo -e "\n ${color}--- $date_now MongoDB backup completed. \n${nc}"
+        echo "$date_now MongoDB backup completed" >> $log_file
+    fi
 fi
 
 sleep 1
