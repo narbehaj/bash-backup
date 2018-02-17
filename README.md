@@ -19,6 +19,6 @@ sudo bash backup.sh
 
 ### Changelog
 
-**v1.0**
+**V1.0**
 
 - Added MongoDB backup support
