@@ -256,7 +256,7 @@ sleep 1
 
 # Mariadb or Mysql backup 
 
-if [ $mysql_docker_backup = "yes" ]
+if [ $docker_mysql_backup = "yes" ]
 then
 	echo -e "\n ${color}--- $date_now Docker Mariadb/MySQL backup enabled, backing up: \n${nc}"
 	echo "$date_now Docker MySQL backup enabled, backing up" >> $log_file
@@ -264,9 +264,9 @@ then
 	do 
 	docker_mysql_container_id=`echo $ocker_mysql_container | awk -F":::" '{print $1}'`
 	docker_mysql_container_name=`docker ps --filter "id=$docker_mysql_container_id" | awk '{print $11}'`
-	docker_mysql_user=`echo $ocker_mysql_container | awk -F":::" $docker_mysql_container '{print $2}'`
-	docker_mysql_pass=`echo $ocker_mysql_container | awk -F":::" $docker_mysql_container '{print $3}'`
-	docker_mysql_database=`echo $ocker_mysql_container | awk -F":::" $docker_mysql_container '{print $4}'`
+	docker_mysql_user=`echo $ocker_mysql_container | awk -F":::" '{print $2}'`
+	docker_mysql_pass=`echo $ocker_mysql_container | awk -F":::" '{print $3}'`
+	docker_mysql_database=`echo $ocker_mysql_container | awk -F":::" '{print $4}'`
 	docker exec $docker_mysql_container_id /usr/bin/mysqldump -u $docker_mysql_user --password=$docker_mysql_pass $docker_mysql_database | gzip -9 > $backup_path/Backup/$path_date/Docker_MySQL_${docker_mysql_container_name}_Dump_$path_date.sql.gz | tee -a $log_file
 	if [ $? -eq 0 ]
 	then
