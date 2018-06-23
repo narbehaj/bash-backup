@@ -14,6 +14,7 @@
 #   - Send a notification to your email
 #   - Logging all the activities
 #   - Encrypts backup file using GPG
+#   - Backup multiple MariaDB/MySQL docker containers
 #
 # Edit the configuration and run:
 #   $ sudo bash backup.sh
