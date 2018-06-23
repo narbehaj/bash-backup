@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# bash-backup V1.0
+# bash-backup V1.1
 #################################################################
 # You need megatools in order to upload your backup file to MEGA
 # Download megatools from http://megatools.megous.com/

@@ -1,5 +1,5 @@
 # Simple backup script for GNU/Linux servers
-#### Simple bash backup script V1.0
+#### Simple bash backup script V1.1
 
 You need megatools in order to upload your backup file to MEGA. Download megatools from http://megatools.megous.com/
 
@@ -12,7 +12,7 @@ You need megatools in order to upload your backup file to MEGA. Download megatoo
 - Send a notification to your email
 - Logging all the activities
 - Encrypts backup file using GPG
-- Backup multiple Mariadb/mysql docker containers
+- Backup multiple MariaDB/MySQL docker containers
 
 ### Edit the configuration and run
 ```
@@ -24,17 +24,21 @@ sudo bash backup.sh
 containerID:::user:::password:::database
 ```
 
-### Changelog
-
-**V1.0**
-
-- Added MongoDB backup support
-
-### Main Requirement
+### Requirements
 
 - tar
 - gzip 
 - bzip2
+
+### Changelog
+
+**V1.1**
+
+- Added multiple MariaDB/MySQL docker backup
+
+**V1.0**
+
+- Added MongoDB backup support
 
 #TODO 
 
