@@ -4,6 +4,7 @@
 You need megatools in order to upload your backup file to MEGA. Download megatools from http://megatools.megous.com/
 
 ### Main features
+
 - Backup custom files and directories
 - Backup MySQL/PostgreSQL/MongoDB databases
 - Copy/SCP/FTP to another server or mounted media
@@ -11,10 +12,16 @@ You need megatools in order to upload your backup file to MEGA. Download megatoo
 - Send a notification to your email
 - Logging all the activities
 - Encrypts backup file using GPG
+- Backup multiple Mariadb/mysql docker containers
 
 ### Edit the configuration and run
 ```
 sudo bash backup.sh
+```
+
+### syntax for Backup Docker Mariadb/Mysql
+```
+containerID:::user:::password:::database
 ```
 
 ### Changelog
@@ -22,3 +29,13 @@ sudo bash backup.sh
 **V1.0**
 
 - Added MongoDB backup support
+
+### Main Requirement
+
+- tar
+- gzip 
+- bzip2
+
+#TODO 
+
+- [ ] Docker volume backup support 
