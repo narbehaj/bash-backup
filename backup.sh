@@ -100,6 +100,11 @@ mongo_port="27017"
 mongo_database=""
 mongo_collection=""
 
+# Docker Mariadb/Mysql dump config
+
+docker_mysql_backup="no"
+docker_mysql_containers="" #pattern of backup most be like containerID:::user:::password:::database and this script can backup multiple container with this pattern
+
 #################################################################
 #################################################################
 #################################################################
@@ -246,6 +251,30 @@ then
 fi
 
 sleep 1
+
+# Docker Backup 
+
+# Mariadb or Mysql backup 
+
+if [ $mysql_docker_backup = "yes" ]
+then
+	echo -e "\n ${color}--- $date_now Docker Mariadb/MySQL backup enabled, backing up: \n${nc}"
+	echo "$date_now Docker MySQL backup enabled, backing up" >> $log_file
+	for $docker_mysql_container in $docker_mysql_containers
+	do 
+	docker_mysql_container_id=`awk -F":::" $docker_mysql_container '{print $1}'`
+	docker_mysql_container_name=`docker ps --filter "id=$docker_mysql_container_id" | awk '{print $11}'`
+	docker_mysql_user=`awk -F":::" $docker_mysql_container '{print $2}'`
+	docker_mysql_pass=`awk -F":::" $docker_mysql_container '{print $3}'`
+	docker_mysql_database=`awk -F":::" $docker_mysql_container '{print $4}'`
+	docker exec $docker_mysql_container_id /usr/bin/mysqldump -u $docker_mysql_user --password=$docker_mysql_pass $docker_mysql_database | gzip -9 > $backup_path/Backup/$path_date/Docker_MySQL_${docker_mysql_container_name}_Dump_$path_date.sql.gz | tee -a $log_file
+	if [ $? -eq 0 ]
+	then
+		echo -e "\n ${color}--- $date_now Docker Mariadb/MySQL backup completed. \n${nc}"
+		echo "$date_now Backing up files" >> $log_file
+	fi
+fi
+
 
 ############################################################################################
 
