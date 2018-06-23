@@ -273,6 +273,7 @@ then
 		echo -e "\n ${color}--- $date_now Docker Mariadb/MySQL backup completed. \n${nc}"
 		echo "$date_now Backing up files" >> $log_file
 	fi
+	done
 fi
 
 
