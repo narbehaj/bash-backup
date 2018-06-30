@@ -36,6 +36,7 @@ containerID:::user:::password:::database
 - gzip 
 - bzip2
 
-#TODO 
+### TODO 
 
 - [ ] Docker volume backup support 
+- [ ] rsync directory files ( backup public or huge files) 
