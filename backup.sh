@@ -215,13 +215,12 @@ then
     # PostgreSQL does not support inline password
     # Know better solution? Let me know.
     USERNAME=`whoami`
+    CUR_DATE=$(date +"%Y-%m-%d-%H-%M-%S")
     if [ $USERNAME = "root" ]
     then
-        cp /root/.pgpass /root/.pgpass_BACKUP_$(date +"%Y-%m-%d-%H-%M-%S") > /dev/null 2> /dev/null
         echo "$postgres_host:$postgres_port:$postgres_database:$postgres_user:$postgres_pass" > /root/.pgpass
         chmod 600 /root/.pgpass
     else
-        cp /home/$USERNAME/.pgpass /home/$USERNAME/.pgpass_BACKUP_$(date +"%Y-%m-%d-%H-%M-%S") > /dev/null 2> /dev/null
         echo "$postgres_host:$postgres_port:$postgres_database:$postgres_user:$postgres_pass" > /home/$USERNAME/.pgpass
         chmod 600 /home/$USERNAME/.pgpass
     fi
