@@ -20,7 +20,7 @@ You need megatools in order to upload your backup file to MEGA. Download megatoo
 sudo bash backup.sh
 ```
 
-### syntax for Backup Docker Mariadb/Mysql
+### Syntax for Backup Docker Mariadb/Mysql
 ```
 containerID:::user:::password:::database
 ```
@@ -32,6 +32,10 @@ containerID:::user:::password:::database
 - bzip2
 
 ### Changelog
+
+**V1.2**
+
+- Added GitLab backup with gitlab-rake
 
 **V1.1**
 
