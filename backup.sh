@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# bash-backup V1.1
+# bash-backup V1.2
 #################################################################
 # You need megatools in order to upload your backup file to MEGA
 # Download megatools from http://megatools.megous.com/
@@ -10,6 +10,7 @@
 #   - Backup custom files and directories
 #   - Backup MySQL/PostgreSQL/MongoDB databases
 #   - Copy/SCP/FTP to another server or mounted media
+#   - Backup GitLab
 #   - Upload to MEGA.nz cloud
 #   - Send a notification to your email
 #   - Logging all the activities
@@ -43,6 +44,13 @@ backup_files="/root/.bash_history /etc/passwd"
 # Directories to backup (Multi value)
 backup_dir_enable="no"
 backup_directories="/etc /var/log /usr/local"
+
+# GitLab backup
+# Change to copy if the data changes while backing up
+# Can be "copy" or "tar"
+gitlab_backup="no"
+gitlab_mode="tar"
+gitlab_config="/etc/gitlab/gitlab.rb"
 
 # Copy to other media (Multi value)
 external_copy="no"
@@ -163,10 +171,10 @@ fi
 
 if [ $iptables_backup = "yes" ]
 then
-        echo -e "\n ${color}--- $date_now Backing up iptables rules \n${nc}"
-        echo "$date_now Backing up iptables rules" >> $log_file
+    echo -e "\n ${color}--- $date_now Backing up iptables rules \n${nc}"
+    echo "$date_now Backing up iptables rules" >> $log_file
     iptables-save >> $backup_path/Backup/$path_date/custom_files/iptables-save
-        echo
+    echo
 fi
 
 
@@ -202,7 +210,33 @@ then
     if [ $? -eq 0 ]
     then
         echo -e "\n ${color}--- $date_now MySQL backup completed. \n${nc}"
-        echo "$date_now Backing up files" >> $log_file
+        echo "$date_now MySQL backup completed" >> $log_file
+    else
+        echo -e " ${color_fail} MySQL backup failed. ${nc} \n"
+        echo "$date_now MySQL backup failed" >> $log_file
+    fi
+fi
+
+sleep 1
+
+# GitLab backup
+if [ $gitlab_backup = "yes" ]
+then
+    echo -e "\n ${color}--- $date_now GitLab backup enabled, backing up: \n${nc}"
+    echo "$date_now GitLab backup enabled, backing up" >> $log_file
+    gitlab_backup_path=`grep 'backup_path' $gitlab_config | grep -v manage | cut -d "=" -f2 | cut -d '"' -f2`
+    gitlab-rake gitlab:backup:create STRATEGY=${gitlab_mode} &> $log_file
+
+    if [ $? -eq 0 ]
+    then
+        last_backup_file=`ls -ltr ${gitlab_backup_path} | awk '{print $9}' | tail -n 1`
+        cp ${gitlab_backup_path}/${last_backup_file} $backup_path/Backup/$path_date/
+
+        echo -e "\n ${color}--- $date_now GitLab backup completed. \n${nc}"
+        echo "$date_now GitLab backup completed" >> $log_file
+    else
+        echo -e " ${color_fail} GitLab backup failed. ${nc} \n"
+        echo "$date_now GitLab backup failed" >> $log_file
     fi
 fi
 

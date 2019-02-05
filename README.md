@@ -1,5 +1,5 @@
 # Simple backup script for GNU/Linux servers
-#### Simple bash backup script V1.1
+#### Simple bash backup script V1.2
 
 You need megatools in order to upload your backup file to MEGA. Download megatools from http://megatools.megous.com/
 
@@ -8,6 +8,7 @@ You need megatools in order to upload your backup file to MEGA. Download megatoo
 - Backup custom files and directories
 - Backup MySQL/PostgreSQL/MongoDB databases
 - Copy/SCP/FTP to another server or mounted media
+- Backup GitLab
 - Upload to MEGA.nz cloud
 - Send a notification to your email
 - Logging all the activities
