@@ -173,7 +173,8 @@ if [ $iptables_backup = "yes" ]
 then
     echo -e "\n ${color}--- $date_now Backing up iptables rules \n${nc}"
     echo "$date_now Backing up iptables rules" >> $log_file
-    iptables-save >> $backup_path/Backup/$path_date/custom_files/iptables-save
+    [ -d $backup_path/Backup/$path_date/custom_files ] || mkdir $backup_path/Backup/$path_date/custom_files
+    iptables-save > $backup_path/Backup/$path_date/custom_files/iptables-save
     echo
 fi
 
