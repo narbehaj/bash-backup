@@ -1,22 +1,24 @@
 #!/bin/bash
 #
-# bash-backup V1.0
+# bash-backup V1.2
 #################################################################
 # You need megatools in order to upload your backup file to MEGA
 # Download megatools from http://megatools.megous.com/
 #################################################################
 # Simple backup script for GNU/Linux servers
 # Main features:
-#	- Backup custom files and directories
-#	- Backup MySQL/PostgreSQL/MongoDB databases
-#	- Copy/SCP/FTP to another server or mounted media
-#	- Upload to MEGA.nz cloud
-#	- Send a notification to your email
-#	- Logging all the activities
-#	- Encrypts backup file using GPG
+#   - Backup custom files and directories
+#   - Backup MySQL/PostgreSQL/MongoDB databases
+#   - Copy/SCP/FTP to another server or mounted media
+#   - Backup GitLab
+#   - Upload to MEGA.nz cloud
+#   - Send a notification to your email
+#   - Logging all the activities
+#   - Encrypts backup file using GPG
+#   - Backup multiple MariaDB/MySQL docker containers
 #
 # Edit the configuration and run:
-#	$ sudo bash backup.sh
+#   $ sudo bash backup.sh
 #
 # Please help to simplify and develop new features
 # Narbeh - http://narbeh.org - narbeh.aj@gmail.com
@@ -112,9 +114,11 @@ mongo_database=""
 mongo_collection=""
 
 # Docker Mariadb/Mysql dump config
+# pattern of backup most be like containerID:::user:::password:::database
+# This script can backup multiple container with this pattern
 
 docker_mysql_backup="no"
-docker_mysql_containers="" #pattern of backup most be like containerID:::user:::password:::database and this script can backup multiple container with this pattern
+docker_mysql_containers=""
 
 #################################################################
 #################################################################
@@ -125,10 +129,10 @@ docker_mysql_containers="" #pattern of backup most be like containerID:::user:::
 ################
 
 case $1 in
-	"--fresh" )
-		rm /var/backup_lock 2> /dev/null;;
-	*)
-		:;;
+    "--fresh" )
+        rm /var/backup_lock 2> /dev/null;;
+    *)
+        :;;
 esac
 
 # Main variables
@@ -141,10 +145,10 @@ date_now=$(date +"%Y-%m-%d %H:%M:%S")
 # Checking lock file
 test -r /var/backup_lock
 if [ $? -eq 0 ];then
-	echo -e "\n ${color}--- $date_now There is another backup process. \n${nc}"
-	echo "$date_now There is another backup process." >> $log_file
-	echo -e "\n ${color}--- $date_now If not, run the script with --fresh argument. \n${nc}"
-	exit
+    echo -e "\n ${color}--- $date_now There is another backup process. \n${nc}"
+    echo "$date_now There is another backup process." >> $log_file
+    echo -e "\n ${color}--- $date_now If not, run the script with --fresh argument. \n${nc}"
+    exit
 fi
 
 touch /var/backup_lock 2> /dev/null
@@ -158,23 +162,24 @@ sleep 1
 # Backing up the files
 if [ $backup_files_enable = "yes" ]
 then
-	echo -e "\n ${color}--- $date_now Backing up files \n${nc}"
-	echo "$date_now Backing up files" >> $log_file
-	mkdir $backup_path/Backup/$path_date/custom_files | tee -a $log_file
-	for backup_custom_files in $backup_files
-	do
-		echo "--> $backup_custom_files" | tee -a $log_file
-		cp $backup_files $backup_path/Backup/$path_date/custom_files/ 2>> $log_file
-	done
-	echo
+    echo -e "\n ${color}--- $date_now Backing up files \n${nc}"
+    echo "$date_now Backing up files" >> $log_file
+    mkdir $backup_path/Backup/$path_date/custom_files | tee -a $log_file
+    for backup_custom_files in $backup_files
+    do
+        echo "--> $backup_custom_files" | tee -a $log_file
+        cp $backup_files $backup_path/Backup/$path_date/custom_files/ 2>> $log_file
+    done
+    echo
 fi
 
 if [ $iptables_backup = "yes" ]
 then
-        echo -e "\n ${color}--- $date_now Backing up iptables rules \n${nc}"
-        echo "$date_now Backing up iptables rules" >> $log_file
-	iptables-save >> $backup_path/Backup/$path_date/custom_files/iptables-save
-        echo
+    echo -e "\n ${color}--- $date_now Backing up iptables rules \n${nc}"
+    echo "$date_now Backing up iptables rules" >> $log_file
+    [ -d $backup_path/Backup/$path_date/custom_files ] || mkdir $backup_path/Backup/$path_date/custom_files
+    iptables-save > $backup_path/Backup/$path_date/custom_files/iptables-save
+    echo
 fi
 
 
@@ -183,19 +188,19 @@ sleep 1
 # Backing up the directories
 if [ $backup_dir_enable = "yes" ]
 then
-	echo -e "\n ${color}--- $date_now Backing up directories \n${nc}"
-	echo "$date_now Backing up directories" >> $log_file
-	for backup_dirs in $backup_directories
-	do
-      echo "--> $backup_dirs" | tee -a $log_file
-		  dir_name=`echo $backup_dirs | cut -d / -f2- | sed 's/\//-/g'`
-      if [[ -d ${backup_dirs}/.git ]]; then
-          tar -cjf $backup_path/Backup/$path_date/$dir_name.tar.bz2 -X ${backup_dirs}/.gitignore $backup_dirs/ > /dev/null 2> /dev/null
-      else
-          tar -cjf $backup_path/Backup/$path_date/$dir_name.tar.bz2 $backup_dirs/ > /dev/null 2> /dev/null
-      fi
-	done
-	echo
+    echo -e "\n ${color}--- $date_now Backing up directories \n${nc}"
+    echo "$date_now Backing up directories" >> $log_file
+    for backup_dirs in $backup_directories
+    do
+        echo "--> $backup_dirs" | tee -a $log_file
+            dir_name=`echo $backup_dirs | cut -d / -f2- | sed 's/\//-/g'`
+        if [[ -d ${backup_dirs}/.git ]]; then
+            tar -cjf $backup_path/Backup/$path_date/$dir_name.tar.bz2 -X ${backup_dirs}/.gitignore $backup_dirs/ > /dev/null 2> /dev/null
+        else
+            tar -cjf $backup_path/Backup/$path_date/$dir_name.tar.bz2 $backup_dirs/ > /dev/null 2> /dev/null
+        fi
+    done
+    echo
 fi
 
 sleep 1
@@ -224,15 +229,41 @@ sleep 1
 # MySQL backup
 if [ $mysql_backup = "yes" ]
 then
-	echo -e "\n ${color}--- $date_now MySQL backup enabled, backing up: \n${nc}"
-	echo "$date_now MySQL backup enabled, backing up" >> $log_file
-	# Using ionice for MySQL dump
-	ionice -c 3 mysqldump -u $mysql_user -p$mysql_pass --events --all-databases | gzip -9 > $backup_path/Backup/$path_date/MySQL_Full_Dump_$path_date.sql.gz | tee -a $log_file
-	if [ $? -eq 0 ]
-	then
-		echo -e "\n ${color}--- $date_now MySQL backup completed. \n${nc}"
-		echo "$date_now Backing up files" >> $log_file
-	fi
+    echo -e "\n ${color}--- $date_now MySQL backup enabled, backing up: \n${nc}"
+    echo "$date_now MySQL backup enabled, backing up" >> $log_file
+    # Using ionice for MySQL dump
+    ionice -c 3 mysqldump -u $mysql_user -p$mysql_pass --events --all-databases | gzip -9 > $backup_path/Backup/$path_date/MySQL_Full_Dump_$path_date.sql.gz | tee -a $log_file
+    if [ $? -eq 0 ]
+    then
+        echo -e "\n ${color}--- $date_now MySQL backup completed. \n${nc}"
+        echo "$date_now MySQL backup completed" >> $log_file
+    else
+        echo -e " ${color_fail} MySQL backup failed. ${nc} \n"
+        echo "$date_now MySQL backup failed" >> $log_file
+    fi
+fi
+
+sleep 1
+
+# GitLab backup
+if [ $gitlab_backup = "yes" ]
+then
+    echo -e "\n ${color}--- $date_now GitLab backup enabled, backing up: \n${nc}"
+    echo "$date_now GitLab backup enabled, backing up" >> $log_file
+    gitlab_backup_path=`grep 'backup_path' $gitlab_config | grep -v manage | cut -d "=" -f2 | cut -d '"' -f2`
+    gitlab-rake gitlab:backup:create STRATEGY=${gitlab_mode} &> $log_file
+
+    if [ $? -eq 0 ]
+    then
+        last_backup_file=`ls -ltr ${gitlab_backup_path} | awk '{print $9}' | tail -n 1`
+        cp ${gitlab_backup_path}/${last_backup_file} $backup_path/Backup/$path_date/
+
+        echo -e "\n ${color}--- $date_now GitLab backup completed. \n${nc}"
+        echo "$date_now GitLab backup completed" >> $log_file
+    else
+        echo -e " ${color_fail} GitLab backup failed. ${nc} \n"
+        echo "$date_now GitLab backup failed" >> $log_file
+    fi
 fi
 
 sleep 1
@@ -240,30 +271,29 @@ sleep 1
 # PostgreSQL backup
 if [ $postgres_backup = "yes" ]
 then
-	# Creating ~/.pgpass for PostgreSQL password
-	# PostgreSQL does not support inline password
-	# Know better solution? Let me know.
-	USERNAME=`whoami`
-	if [ $USERNAME = "root" ]
-	then
-		cp /root/.pgpass /root/.pgpass_BACKUP_$(date +"%Y-%m-%d-%H-%M-%S") > /dev/null 2> /dev/null
-		echo "$postgres_host:$postgres_port:$postgres_database:$postgres_user:$postgres_pass" > /root/.pgpass
-		chmod 600 /root/.pgpass
-	else
-		cp /home/$USERNAME/.pgpass /home/$USERNAME/.pgpass_BACKUP_$(date +"%Y-%m-%d-%H-%M-%S") > /dev/null 2> /dev/null
-		echo "$postgres_host:$postgres_port:$postgres_database:$postgres_user:$postgres_pass" > /home/$USERNAME/.pgpass
-		chmod 600 /home/$USERNAME/.pgpass
-	fi
+    # Creating ~/.pgpass for PostgreSQL password
+    # PostgreSQL does not support inline password
+    # Know better solution? Let me know.
+    USERNAME=`whoami`
+    CUR_DATE=$(date +"%Y-%m-%d-%H-%M-%S")
+    if [ $USERNAME = "root" ]
+    then
+        echo "$postgres_host:$postgres_port:$postgres_database:$postgres_user:$postgres_pass" > /root/.pgpass
+        chmod 600 /root/.pgpass
+    else
+        echo "$postgres_host:$postgres_port:$postgres_database:$postgres_user:$postgres_pass" > /home/$USERNAME/.pgpass
+        chmod 600 /home/$USERNAME/.pgpass
+    fi
 
-	echo -e "\n ${color}--- $date_now PostgreSQL backup enabled, backing up: \n${nc}"
-	echo "$date_now PostgreSQL backup enabled, backing up" >> $log_file
-	# Using ionice for PostgreSQL dump
-	ionice -c 3 pg_dump -p $postgres_port -h $postgres_host -Fc -U $postgres_user $postgres_database > ${backup_path}/Backup/${path_date}/Postgres_Full_Dump_${path_date}.dump | tee -a $log_file
-	if [ $? -eq 0 ]
-	then
-		echo -e "\n ${color}--- $date_now PostgreSQL backup completed. \n${nc}"
-		echo "$date_now PostgreSQL backup completed" >> $log_file
-	fi
+    echo -e "\n ${color}--- $date_now PostgreSQL backup enabled, backing up: \n${nc}"
+    echo "$date_now PostgreSQL backup enabled, backing up" >> $log_file
+    # Using ionice for PostgreSQL dump
+    ionice -c 3 pg_dump -p $postgres_port -h $postgres_host -Fc -U $postgres_user $postgres_database > ${backup_path}/Backup/${path_date}/Postgres_Full_Dump_${path_date}.dump | tee -a $log_file
+    if [ $? -eq 0 ]
+    then
+        echo -e "\n ${color}--- $date_now PostgreSQL backup completed. \n${nc}"
+        echo "$date_now PostgreSQL backup completed" >> $log_file
+    fi
 fi
 
 sleep 1
@@ -285,7 +315,6 @@ fi
 sleep 1
 
 # Docker Backup 
-
 # Mariadb or Mysql backup 
 
 if [ $docker_mysql_backup = "yes" ]
@@ -338,20 +367,20 @@ sleep 1
 # Copy to other storage
 if [ $external_copy = "yes" ]
 then
-	for cp_paths in $external_storage
-	do
-		echo -e "\n ${color}--- $date_now Copy backup archive to $cp_paths: \n${nc}"
-		echo "$date_now Copy backup archive to $cp_paths" >> $log_file
-		cp $backup_path/$final_archive $cp_paths/
-		if [ $? -eq 0 ]
-		then
-			echo -e "Copied to $cp_paths. \n"
-			echo "$date_now Copied to $cp_paths" >> $log_file
-		else
-			echo -e " ${color_fail} Copy to $cp_paths failed. ${nc} \n"
-			echo "$date_now Copy to $cp_paths failed. Please investigate." >> $log_file
-		fi
-	done
+    for cp_paths in $external_storage
+    do
+        echo -e "\n ${color}--- $date_now Copy backup archive to $cp_paths: \n${nc}"
+        echo "$date_now Copy backup archive to $cp_paths" >> $log_file
+        cp $backup_path/$final_archive $cp_paths/
+        if [ $? -eq 0 ]
+        then
+            echo -e "Copied to $cp_paths. \n"
+            echo "$date_now Copied to $cp_paths" >> $log_file
+        else
+            echo -e " ${color_fail} Copy to $cp_paths failed. ${nc} \n"
+            echo "$date_now Copy to $cp_paths failed. Please investigate." >> $log_file
+        fi
+    done
 fi
 
 sleep 1
@@ -359,10 +388,10 @@ sleep 1
 # SCP to other server
 if [ $scp_enable = "yes" ]
 then
-	echo -e "\n ${color}--- $date_now SCP backup archive to $scp_server: \n${nc}"
-	echo "$date_now SCP backup archive to $scp_server" >> $log_file
-	scp -P $scp_port $backup_path/$final_archive '$scp_username'@'$scp_server':$scp_path
-	echo "$date_now SCP done" | tee -a $log_file
+    echo -e "\n ${color}--- $date_now SCP backup archive to $scp_server: \n${nc}"
+    echo "$date_now SCP backup archive to $scp_server" >> $log_file
+    scp -P $scp_port $backup_path/$final_archive '$scp_username'@'$scp_server':$scp_path
+    echo "$date_now SCP done" | tee -a $log_file
 fi
 
 sleep 1
@@ -370,47 +399,47 @@ sleep 1
 # Upload to FTP server
 if [ $ftp_enable = "yes" ]
 then
-	if [ `which curl` ]
-	then
-		echo -e "\n ${color}--- $date_now Uploading backup archive to FTP server $ftp_server \n${nc}"
-		echo "$date_now Uploading backup archive to FTP server $ftp_server" >> $log_file
-		curl --connect-timeout 30 -S -T $backup_path/$final_archive ftp://$ftp_server/$ftp_path --user $ftp_username:$ftp_password | tee -a $log_file
-		if [ $? -eq 0 ]
-		then
-			echo "$date_now FTP Upload Done" | tee -a $log_file
-		else
-			echo -e "\n ${color_fail}--- $date_now FTP upload failed. \n${nc}"
-			echo "$date_now FTP upload failed. Please investigate." >> $log_file
-		fi
-	else
-		echo -e " ${color_fail}--- $date_now You have been enabled FTP upload. ${nc}"
-		echo -e " ${color_fail}--- $date_now You need to install curl package. ${nc}"
-		echo -e " ${color_fail}--- $date_now FTP upload failed. ${nc}"
-		echo "$date_now FTP upload failed. Install 'curl' package." >> $log_file
-	fi
+    if [ `which curl` ]
+    then
+        echo -e "\n ${color}--- $date_now Uploading backup archive to FTP server $ftp_server \n${nc}"
+        echo "$date_now Uploading backup archive to FTP server $ftp_server" >> $log_file
+        curl --connect-timeout 30 -S -T $backup_path/$final_archive ftp://$ftp_server/$ftp_path --user $ftp_username:$ftp_password | tee -a $log_file
+        if [ $? -eq 0 ]
+        then
+            echo "$date_now FTP Upload Done" | tee -a $log_file
+        else
+            echo -e "\n ${color_fail}--- $date_now FTP upload failed. \n${nc}"
+            echo "$date_now FTP upload failed. Please investigate." >> $log_file
+        fi
+    else
+        echo -e " ${color_fail}--- $date_now You have been enabled FTP upload. ${nc}"
+        echo -e " ${color_fail}--- $date_now You need to install curl package. ${nc}"
+        echo -e " ${color_fail}--- $date_now FTP upload failed. ${nc}"
+        echo "$date_now FTP upload failed. Install 'curl' package." >> $log_file
+    fi
 fi
 
 # Upload archive file to MEGA.nz
 if [ $mega_enable = "yes" ]
 then
-	if [ `which megaput` ]
-	then
-		echo -e "\n ${color}--- $date_now Uploading backup archive to MEGA.nz \n${nc}"
-		echo "$date_now Uploading backup archive to MEGA.nz" >> $log_file
-		megaput --reload --path $mega_path -u $mega_email -p $mega_pass $backup_path/$final_archive
-		echo "$date_now MEGA Upload Done. Path: $mega_path" | tee -a $log_file
-	else
-		echo -e " ${color_fail}--- $date_now You have been enabled MEGA upload. ${nc}"
-		echo -e " ${color_fail}--- $date_now You need to install megatools from http://megatools.megous.com ${nc}"
-		echo -e " ${color_fail}--- $date_now MEGA upload failed. ${nc}"
-		echo "$date_now Uploading to MEGA.nz failed. Install 'megatools' from http://megatools.megous.com" >> $log_file
-	fi
+    if [ `which megaput` ]
+    then
+        echo -e "\n ${color}--- $date_now Uploading backup archive to MEGA.nz \n${nc}"
+        echo "$date_now Uploading backup archive to MEGA.nz" >> $log_file
+        megaput --reload --path $mega_path -u $mega_email -p $mega_pass $backup_path/$final_archive
+        echo "$date_now MEGA Upload Done. Path: $mega_path" | tee -a $log_file
+    else
+        echo -e " ${color_fail}--- $date_now You have been enabled MEGA upload. ${nc}"
+        echo -e " ${color_fail}--- $date_now You need to install megatools from http://megatools.megous.com ${nc}"
+        echo -e " ${color_fail}--- $date_now MEGA upload failed. ${nc}"
+        echo "$date_now Uploading to MEGA.nz failed. Install 'megatools' from http://megatools.megous.com" >> $log_file
+    fi
 fi
 
 # Send a simple email notification
 if [ $send_email = "yes" ]
 then
-	echo -e "Backup completed $date_now\nBackup path: $backup_path/$final_archive" | mail -s "Backup Result" $email_to >> $log_file 2>&1
+    echo -e "Backup completed $date_now\nBackup path: $backup_path/$final_archive" | mail -s "Backup Result" $email_to >> $log_file 2>&1
 fi
 
 echo -e "\n"
