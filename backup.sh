@@ -43,9 +43,20 @@ backup_files="/root/.bash_history /etc/passwd"
 backup_dir_enable="no"
 backup_directories="/etc /var/log /usr/local"
 
+# backup sync directory to MinIO (Multi value)
+backup_to_minio_enable="no"
+minio_directories="/etc /var/log /usr/local"
+minio_bucket=""
+minio_cluster_name=""
+
 # Copy to other media (Multi value)
 external_copy="no"
 external_storage="/mnt"
+
+# Copy tar backup to MinIo
+external_minio_copy="no"
+external_minio_bucket=""
+external_minio_cluster_name=""
 
 # SCP to other server (Trusted servers for now)
 scp_enable="no"
@@ -188,6 +199,27 @@ then
 fi
 
 sleep 1
+
+# Backing up the directories to MinIo
+if [ $backup_to_minio_enable = "yes" ]
+if ! [ -x "$(command -v mc)" ]; then
+  echo 'Error: minio client (mc) is not installed.' >&2
+  exit 1
+fi
+then
+	echo -e "\n ${color}--- $date_now Backing up directories \n${nc}"
+	echo "$date_now Backing up directories" >> $log_file
+	for backup_dirs in $minio_directories
+	do
+      echo "--> $backup_dirs" | tee -a $log_file
+		  dir_name=`echo $backup_dirs | awk -F'/' '{print $NF}'`
+		  mc mirror --overwrite  $backup_dirs ${minio_cluster_name}/${minio_bucket}/${dir_name}
+	done
+	echo
+fi
+
+sleep 1
+
 
 # MySQL backup
 if [ $mysql_backup = "yes" ]

@@ -23,6 +23,19 @@ sudo bash backup.sh
 ```
 containerID:::user:::password:::database
 ```
+### Minio backup requirment on servers
+
+```
+mc config host add <ALIAS> <YOUR-S3-ENDPOINT> <YOUR-ACCESS-KEY> <YOUR-SECRET-KEY> <API-SIGNATURE>
+
+```
+for example 
+
+```
+mc config host add minio http://192.168.1.51 BKIKJAA5BMMU2RHO6IBB V7f1CwQqAcwo80UEIJEjc5gVQUSSx5ohQ9GSrr12 --api S3v4
+```
+
+and replace minio with minio_cluster_name 
 
 ### Changelog
 
@@ -30,11 +43,15 @@ containerID:::user:::password:::database
 
 - Added MongoDB backup support
 
+**V1.1**
+- Added Minio backup 
+
 ### Main Requirement
 
 - tar
 - gzip 
 - bzip2
+- mc 
 
 ### TODO 
 
