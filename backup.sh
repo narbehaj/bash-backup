@@ -45,16 +45,20 @@ backup_files="/root/.bash_history /etc/passwd"
 backup_dir_enable="no"
 backup_directories="/etc /var/log /usr/local"
 
-# GitLab backup
-# Change to copy if the data changes while backing up
-# Can be "copy" or "tar"
-gitlab_backup="no"
-gitlab_mode="tar"
-gitlab_config="/etc/gitlab/gitlab.rb"
+# backup sync directory to MinIO (Multi value)
+backup_to_minio_enable="no"
+minio_directories="/etc /var/log /usr/local"
+minio_bucket=""
+minio_cluster_name=""
 
 # Copy to other media (Multi value)
 external_copy="no"
 external_storage="/mnt"
+
+# Copy tar backup to MinIo
+external_minio_copy="no"
+external_minio_bucket=""
+external_minio_cluster_name=""
 
 # SCP to other server (Trusted servers for now)
 scp_enable="no"
@@ -201,6 +205,27 @@ fi
 
 sleep 1
 
+# Backing up the directories to MinIo
+if [ $backup_to_minio_enable = "yes" ]
+if ! [ -x "$(command -v mc)" ]; then
+  echo 'Error: minio client (mc) is not installed.' >&2
+  exit 1
+fi
+then
+	echo -e "\n ${color}--- $date_now Backing up directories \n${nc}"
+	echo "$date_now Backing up directories" >> $log_file
+	for backup_dirs in $minio_directories
+	do
+      echo "--> $backup_dirs" | tee -a $log_file
+		  dir_name=`echo $backup_dirs | awk -F'/' '{print $NF}'`
+		  mc mirror --overwrite  $backup_dirs ${minio_cluster_name}/${minio_bucket}/${dir_name}
+	done
+	echo
+fi
+
+sleep 1
+
+
 # MySQL backup
 if [ $mysql_backup = "yes" ]
 then
@@ -294,22 +319,22 @@ sleep 1
 
 if [ $docker_mysql_backup = "yes" ]
 then
-    echo -e "\n ${color}--- $date_now Docker Mariadb/MySQL backup enabled, backing up: \n${nc}"
-    echo "$date_now Docker MySQL backup enabled, backing up" >> $log_file
-    for docker_mysql_container in $docker_mysql_containers
-        do 
-            docker_mysql_container_id=`echo $ocker_mysql_container | awk -F":::" '{print $1}'`
-            docker_mysql_container_name=`docker ps --filter "id=$docker_mysql_container_id" | awk '{print $11}'`
-            docker_mysql_user=`echo $ocker_mysql_container | awk -F":::" '{print $2}'`
-            docker_mysql_pass=`echo $ocker_mysql_container | awk -F":::" '{print $3}'`
-            docker_mysql_database=`echo $ocker_mysql_container | awk -F":::" '{print $4}'`
-            docker exec $docker_mysql_container_id /usr/bin/mysqldump -u $docker_mysql_user --password=$docker_mysql_pass $docker_mysql_database | gzip -9 > $backup_path/Backup/$path_date/Docker_MySQL_${docker_mysql_container_name}_Dump_$path_date.sql.gz | tee -a $log_file
-    if [ $? -eq 0 ]
-    then
-        echo -e "\n ${color}--- $date_now Docker Mariadb/MySQL backup completed. \n${nc}"
-        echo "$date_now Docker Mariadb/MySQL backup completed" >> $log_file
-    fi
-    done
+	echo -e "\n ${color}--- $date_now Docker Mariadb/MySQL backup enabled, backing up: \n${nc}"
+	echo "$date_now Docker MySQL backup enabled, backing up" >> $log_file
+	for docker_mysql_container in $docker_mysql_containers
+	do 
+	docker_mysql_container_id=`echo $docker_mysql_container | awk -F":::" '{print $1}'`
+	docker_mysql_container_name=`docker ps --filter "id=$docker_mysql_container_id" | awk '{print $11}'`
+	docker_mysql_user=`echo $docker_mysql_container | awk -F":::" '{print $2}'`
+	docker_mysql_pass=`echo $docker_mysql_container | awk -F":::" '{print $3}'`
+	docker_mysql_database=`echo $docker_mysql_container | awk -F":::" '{print $4}'`
+	docker exec $docker_mysql_container_id /usr/bin/mysqldump -u $docker_mysql_user --password=$docker_mysql_pass $docker_mysql_database | gzip -9 > $backup_path/Backup/$path_date/Docker_MySQL_${docker_mysql_container_name}_Dump_$path_date.sql.gz | tee -a $log_file
+	if [ $? -eq 0 ]
+	then
+		echo -e "\n ${color}--- $date_now Docker Mariadb/MySQL backup completed. \n${nc}"
+		echo "$date_now Backing up files" >> $log_file
+	fi
+	done
 fi
 
 

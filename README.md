@@ -24,6 +24,19 @@ sudo bash backup.sh
 ```
 containerID:::user:::password:::database
 ```
+### Minio backup requirment on servers
+
+```
+mc config host add <ALIAS> <YOUR-S3-ENDPOINT> <YOUR-ACCESS-KEY> <YOUR-SECRET-KEY> <API-SIGNATURE>
+
+```
+for example 
+
+```
+mc config host add minio http://192.168.1.51 BKIKJAA5BMMU2RHO6IBB V7f1CwQqAcwo80UEIJEjc5gVQUSSx5ohQ9GSrr12 --api S3v4
+```
+
+and replace minio with minio_cluster_name 
 
 ### Requirements
 
@@ -37,14 +50,17 @@ containerID:::user:::password:::database
 
 - Added GitLab backup with gitlab-rake
 
-**V1.1**
+**V1.3**
+- Added Minio backup 
 
-- Added multiple MariaDB/MySQL docker backup
+### Main Requirement
 
-**V1.0**
-
-- Added MongoDB backup support
+- tar
+- gzip 
+- bzip2
+- mc 
 
 ### TODO 
 
 - [ ] Docker volume backup support 
+- [ ] rsync directory files ( backup public or huge files) 
