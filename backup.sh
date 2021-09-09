@@ -93,6 +93,11 @@ mega_email=""
 mega_pass=""
 mega_path="/Root/backups" # /Root/ should always be here.
 
+# Upload to Google Drive if you have installed and authorized the gdrive CLI.
+gdrive_enable="no"
+gdrive_dir_id="" # Used for uploading to a specific directory 
+
+
 # Full MySQL dump (All Databases)
 mysql_backup="no"
 mysql_user=""
@@ -433,6 +438,28 @@ then
         echo -e " ${color_fail}--- $date_now You need to install megatools from http://megatools.megous.com ${nc}"
         echo -e " ${color_fail}--- $date_now MEGA upload failed. ${nc}"
         echo "$date_now Uploading to MEGA.nz failed. Install 'megatools' from http://megatools.megous.com" >> $log_file
+    fi
+fi
+
+# Upload archive file to Google Drive
+if [ $gdrive_enable = "yes" ]
+then
+    if [ `which gdrive` ]
+    then
+        echo -e "\n ${color}--- $date_now Uploading backup archive to Google Drive \n${nc}"
+        echo "$date_now Uploading backup archive to Google Drive" >> $log_file
+        if [ $gdrive_dir_id != "" ]
+        then
+            gdrive upload --parent $gdrive_dir_id $backup_path/$final_archive
+        else
+            gdrive upload $backup_path/$final_archive
+        fi
+        echo "$date_now Google Drive Upload Done." | tee -a $log_file
+    else
+        echo -e " ${color_fail}--- $date_now You have been enabled Google Drive upload. ${nc}"
+        echo -e " ${color_fail}--- $date_now You need to install gdrive. For more information see https://github.com/prasmussen/gdrive ${nc}"
+        echo -e " ${color_fail}--- $date_now Google Drive upload failed. ${nc}"
+        echo "$date_now Uploading to Google Drive failed. Install 'gdrive'. For more information see https://github.com/prasmussen/gdrive" >> $log_file
     fi
 fi
 
